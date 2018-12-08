@@ -61,7 +61,8 @@ const typeDefs = gql`
   }
   type Mutation {
     # 账户登陆
-    login(userName: String!, password: String!): LoginMutationResult
+    login(userName: String!, password: String!): LoginMutationResult,
+    logout: Boolean!
   }
 `;
 
@@ -120,7 +121,10 @@ const resolvers = {
             }
             throw new AuthenticationError('登陆失败');
             // new ApolloError('登陆失败', 500, {});
-        }
+        },
+        logout: (parent, args, context, info) => {
+            return true;
+        },
     }
 };
 
@@ -130,6 +134,7 @@ const resolvers = {
 const server = new ApolloServer({
     typeDefs,
     resolvers,
+    // playground: false,
     context: ({ req }) => {
         // get the user token from the headers
         const token = req.headers.authorization || '';
