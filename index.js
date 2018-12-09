@@ -50,13 +50,11 @@ const typeDefs = gql`
   # (A "Mutation" type will be covered later on.)
   type Query {
     books: [Book],
-    isLogin: Boolean,
     viewer: Viewer
   }
   
   type LoginMutationResult {
     token: String,
-    isLogin: Boolean,
     viewer: Viewer
   }
   type Mutation {
@@ -83,9 +81,6 @@ const resolvers = {
             // throw an error.
             if (!context.user || !context.user.roles.includes('admin')) return null;
             return [...books];
-        },
-        isLogin: async (parent, args, context, info) => {
-            return !!context.user;
         },
         viewer: (parent, args, {user}, info) => {
             if (!user) return null;
