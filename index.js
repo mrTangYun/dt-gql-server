@@ -1,6 +1,7 @@
 const { ApolloServer, gql, UserInputError, AuthenticationError, ApolloError } = require('apollo-server');
 
 const {MoviesAPI} = require('./api/tushare/index');
+const {typeDefs} = require('./types');
 
 function getUser(token) {
     if (!token) return null;
@@ -26,66 +27,6 @@ const books = [
 
 // Type definitions define the "shape" of your data and specify
 // which ways the data can be fetched from the GraphQL server.
-const typeDefs = gql`
-  directive @auth(requires: Role = ADMIN) on OBJECT | FIELD_DEFINITION
-
-  enum Role {
-    ADMIN
-    REVIEWER
-    USER
-  }
-  # Comments in GraphQL are defined with the hash (#) symbol.
-
-  # This "Book" type can be used in other type declarations.
-  type Book {
-    title: String
-    author: String
-  }
-  
-  type Viewer {
-    id: String
-    userName: String
-  }
-
-  type Movie {
-    id: String
-  } 
-  
-  """交易日历, 获取各大交易所交易日历数据,默认提取的是上交所"""
-  type TradeCalResult {
-    request_id: String
-  }  
-  """股票列表"""
-  type StockBasicResult {
-    """TS代码"""
-    ts_code: String
-    """股票代码"""
-    name: String
-  }
-  """tushare相关接口"""
-  type tuShareApiType {
-    trade_cal: TradeCalResult,
-    stock_basic: [StockBasicResult]
-  }
-  # The "Query" type is the root of all GraphQL queries.
-  # (A "Mutation" type will be covered later on.)
-  type Query {
-    books: [Book],
-    viewer: Viewer,
-    movie(id: String!): Movie,
-    tuShare: tuShareApiType
-  }
-  
-  type LoginMutationResult {
-    token: String,
-    viewer: Viewer
-  }
-  type Mutation {
-    # 账户登陆
-    login(userName: String!, password: String!): LoginMutationResult,
-    logout: Boolean!
-  }
-`;
 
 function delay(t) {
     return new Promise((resolve, reject) => {
@@ -115,7 +56,7 @@ const resolvers = {
         movie: async (_source, { id }, { dataSources }) => {
             return dataSources.moviesAPI.getMovie(id);
         },
-        tuShare: async (_source, { id }, { dataSources }) => {
+        tuShare: async (_source, args, { dataSources }) => {
             return {
                 trade_cal: async () => {
                     return dataSources.moviesAPI.trade_cal();
@@ -123,6 +64,13 @@ const resolvers = {
                 stock_basic: async () => {
                     return await dataSources.moviesAPI.stock_basic();
                 },
+                weekly: async (args, { dataSources }) => {
+                    const result = await dataSources.moviesAPI.fetchApi('weekly', args, 'ts_code, trade_date, close, open, high, low, pre_close, change, pct_chg, vol, amount');
+                    return result.items.map(([ts_code, trade_date, close, open, high, low, pre_close, change, pct_chg, vol, amount]) => ({
+                        id: `weekly-${trade_date}-${ts_code}`,
+                        ts_code, trade_date, close, open, high, low, pre_close, change, pct_chg, vol, amount
+                    }));
+                }
             }
         }
     },

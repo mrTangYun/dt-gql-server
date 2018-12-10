@@ -7,6 +7,23 @@ class MoviesAPI extends RESTDataSource {
         this.baseURL = 'http://api.tushare.pro/';
     }
 
+    async fetchApi(apiName, args, fields) {
+        const result = await this.post('/',
+            {
+                "api_name": apiName,
+                "token": token,
+                "params": {
+                    ...args
+                },
+                "fields": fields
+            });
+        const {code, msg, data} = result;
+        if (code !== 0) {
+            throw new Error(`apiName: ${apiName}, code: ${code}, msg: ${msg}`);
+        }
+        return data;
+    }
+
     async trade_cal() {
         return await this.post('/',
             {
