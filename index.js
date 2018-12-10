@@ -1,5 +1,5 @@
 const { ApolloServer, gql, UserInputError, AuthenticationError, ApolloError } = require('apollo-server');
-
+const moment = require('moment');
 const {MoviesAPI} = require('./api/tushare/index');
 const {typeDefs} = require('./types');
 
@@ -65,6 +65,20 @@ const resolvers = {
                     return await dataSources.moviesAPI.stock_basic();
                 },
                 weekly: async (args, { dataSources }) => {
+                    const {ts_code, trade_date} = args;
+                    if (!ts_code && !trade_date) {
+                        throw new UserInputError('Form Arguments invalid', {
+                            invalidArgs: Object.keys(args),
+                        });
+                    }
+                    if (trade_date) {
+                        if (moment(trade_date, 'YYYYMMDD').day() !== 5) {
+                            throw new UserInputError('trade_date必须是星期5的日期', {
+                                invalidArgs: trade_date,
+                            });
+                        }
+                        args.trade_date = moment(trade_date, 'YYYYMMDD').format(`YYYYMMDD`);
+                    }
                     const result = await dataSources.moviesAPI.fetchApi('weekly', args, 'ts_code, trade_date, close, open, high, low, pre_close, change, pct_chg, vol, amount');
                     return result.items.map(([ts_code, trade_date, close, open, high, low, pre_close, change, pct_chg, vol, amount]) => ({
                         id: `weekly-${trade_date}-${ts_code}`,
