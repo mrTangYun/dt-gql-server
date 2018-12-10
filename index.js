@@ -1,5 +1,6 @@
 const { ApolloServer, gql, UserInputError, AuthenticationError, ApolloError } = require('apollo-server');
 
+const {MoviesAPI} = require('./api/tushare/index');
 
 function getUser(token) {
     if (!token) return null;
@@ -46,11 +47,33 @@ const typeDefs = gql`
     userName: String
   }
 
+  type Movie {
+    id: String
+  } 
+  
+  """交易日历, 获取各大交易所交易日历数据,默认提取的是上交所"""
+  type TradeCalResult {
+    request_id: String
+  }  
+  """股票列表"""
+  type StockBasicResult {
+    """TS代码"""
+    ts_code: String
+    """股票代码"""
+    name: String
+  }
+  """tushare相关接口"""
+  type tuShareApiType {
+    trade_cal: TradeCalResult,
+    stock_basic: [StockBasicResult]
+  }
   # The "Query" type is the root of all GraphQL queries.
   # (A "Mutation" type will be covered later on.)
   type Query {
     books: [Book],
-    viewer: Viewer
+    viewer: Viewer,
+    movie(id: String!): Movie,
+    tuShare: tuShareApiType
   }
   
   type LoginMutationResult {
@@ -88,6 +111,19 @@ const resolvers = {
                 id: user.id,
                 userName: user.userName
             };
+        },
+        movie: async (_source, { id }, { dataSources }) => {
+            return dataSources.moviesAPI.getMovie(id);
+        },
+        tuShare: async (_source, { id }, { dataSources }) => {
+            return {
+                trade_cal: async () => {
+                    return dataSources.moviesAPI.trade_cal();
+                },
+                stock_basic: async () => {
+                    return await dataSources.moviesAPI.stock_basic();
+                },
+            }
         }
     },
     Mutation: {
@@ -146,7 +182,10 @@ const server = new ApolloServer({
     //     // Or, you can delete the exception information
     //     // delete error.extensions.exception;
     //     // return error;
-    // }
+    // },
+    dataSources: () => ({
+        moviesAPI: new MoviesAPI(),
+    }),
 });
 
 // This `listen` method launches a web-server.  Existing apps
