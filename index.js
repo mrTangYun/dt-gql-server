@@ -58,11 +58,20 @@ const resolvers = {
         },
         tuShare: async (_source, args, { dataSources }) => {
             return {
+                getCSVData: async () => {
+                    const result = await dataSources.moviesAPI.getCSVData();
+                    // console.log(result);
+                    return result;
+                },
                 trade_cal: async () => {
                     return dataSources.moviesAPI.trade_cal();
                 },
                 stock_basic: async () => {
-                    return await dataSources.moviesAPI.stock_basic();
+                    const result = await dataSources.moviesAPI.fetchApi('stock_basic', args, 'ts_code, symbol, name, area, industry, fullname, enname, market, exchange, curr_type, list_status, list_date, delist_date, is_hs');
+                    return result.items.map(([ts_code, symbol, name, area, industry, fullname, enname, market, exchange, curr_type, list_status, list_date, delist_date, is_hs]) => ({
+                        id: `basic-${ts_code}`,
+                        ts_code, symbol, name, area, industry, fullname, enname, market, exchange, curr_type, list_status, list_date, delist_date, is_hs
+                    }));
                 },
                 weekly: async (args, { dataSources }) => {
                     const {ts_code, trade_date} = args;

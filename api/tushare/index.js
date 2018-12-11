@@ -1,11 +1,47 @@
 const { RESTDataSource } = require('apollo-datasource-rest');
+const fs = require('fs');
+const path = require('path');
+const csv = require("fast-csv");
 
 const token = "297852bb31038cdc33cd9a2d9e5c582a915a88811ab5a53eb77c3b64";
+
+let DATACSV;
 class MoviesAPI extends RESTDataSource {
     constructor() {
         super();
         this.baseURL = 'http://api.tushare.pro/';
     }
+
+    getData() {
+        return new Promise((resolve, reject) =>{
+            const dataCsv = {
+                titles: [],
+                dates: [],
+                data: []
+            };
+            csv.fromPath(path.resolve("api/tushare/Weight_ETF_Data_Weekly_2018_9_14_dolphinDB.csv")).on("data", data => {
+                if (dataCsv.titles.length === 0) {
+                    data.map((item, index) => {
+                        if (index) {
+                            dataCsv.titles.push(item);
+                        }
+                    });
+                } else {
+                    const [date, ...datas] = data;
+                    dataCsv.dates.push(date);
+                    dataCsv.data.push([...datas.map(item => item.toString())]);
+                }
+            }).on("end", () => {
+                resolve(dataCsv);
+            });
+        })
+    }
+
+    async getCSVData() {
+        if (DATACSV) return DATACSV;
+        DATACSV = await this.getData();
+        return DATACSV;
+    };
 
     async fetchApi(apiName, args, fields) {
         const result = await this.post('/',

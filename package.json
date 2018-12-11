@@ -13,6 +13,7 @@
   "dependencies": {
     "apollo-datasource-rest": "^0.2.1",
     "apollo-server": "^2.2.6",
+    "fast-csv": "^2.4.1",
     "graphql": "^14.0.2",
     "moment": "^2.22.2",
     "nodemon": "^1.18.7"

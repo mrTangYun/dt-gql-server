@@ -51,6 +51,12 @@ function stringToInputArgsType(str) {
 }
 
 const typeDefs = `
+  """csv得到的数据"""
+  type CSVDataResult {
+    titles: [String]
+    dates: [String]
+    data: [[String]]
+  }
   """交易日历, 获取各大交易所交易日历数据,默认提取的是上交所"""
   type TradeCalResult {
     ${stringToType(`exchange	str	交易所 SSE上交所 SZSE深交所
@@ -106,8 +112,11 @@ amount	float	成交额 （千元）`, false)}
   }
   """tuShare相关接口"""
   type tuShareApiType {
+    getCSVData: CSVDataResult,
     trade_cal: TradeCalResult,
-    stock_basic: [StockBasicResult],
+    stock_basic(${stringToInputArgsType(`is_hs	str	N	是否沪深港通标的，N否 H沪股通 S深股通
+list_status	str	N	上市状态： L上市 D退市 P暂停上市
+exchange	str	N	交易所 SSE上交所 SZSE深交所 HKEX港交所`)}): [StockBasicResult],
     weekly(${stringToInputArgsType(`ts_code	str	N	TS代码 （ts_code,trade_date两个参数任选一）
 trade_date	str	N	交易日期 （每周五日期，YYYYMMDD格式）
 start_date	str	N	开始日期
